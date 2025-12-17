@@ -1,2 +1,6 @@
 build_*/
 .direnv/
+TAGS
+*.o
+*.a
+*.so

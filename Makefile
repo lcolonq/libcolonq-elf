@@ -1,9 +1,3 @@
-SRCS :=
-OBJECTS := $(SRCS:src/%.c=build/%.o)
-HEADERS := $(wildcard src/*.h)
-EXE := elf
-LIB := libcolonq-elf.a
-
 CC ?= gcc
 AR ?= ar
 CHK_SOURCES ?= $(SRCS)
@@ -12,6 +6,12 @@ CFLAGS ?= -flto -ffat-lto-objects -march=native --std=c89 -g -Ideps/ -Isrc/ -Wal
 LDFLAGS ?= -flto -g -static
 
 BUILD = build_$(CC)
+
+SRCS := src/elf.c
+OBJECTS := $(SRCS:src/%.c=$(BUILD)/%.o)
+HEADERS := $(wildcard src/*.h)
+EXE := elf
+LIB := libcolonq-elf.a
 
 prefix ?= /usr/local
 exec_prefix ?= $(prefix)
@@ -52,4 +52,5 @@ install: $(EXE) $(LIB)
 check-syntax: TAGS
 	gcc $(CFLAGS) -fsyntax-only $(CHK_SOURCES)
 
+-include $(BUILD)/main.d
 -include $(OBJECTS:.o=.d)
