@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
     elf_ctx e = {0};
     elf_header h = {0};
     elf_section_header sh = {0};
+    elf_program_header ph = {0};
     i64 i = 0;
 
     if (argc < 3) { fprintf(stderr, "usage: %s MODE ELF-PATH\n", argv[0]); return 1; }
@@ -52,7 +53,7 @@ int main(int argc, char **argv) {
         }
     } else {
         elf_symbol s = {0};
-        i64 len = 4096;
+        i64 len = 1024 * 16;
         u8 *buf = calloc((size_t) len, sizeof(u8));
         FILE *f = NULL;
         u64 sh_off = 0,
@@ -68,11 +69,17 @@ int main(int argc, char **argv) {
             text_off = 0,
             text_name_off = 0,
             text_len = 0,
+            program_header_off = 0,
             off = 0,
             symbols = 0,
             sections = 0;
         e = elf_ctx_new(buf, len, ELF_CLASS_64, ELF_ENDIANNESS_LITTLE);
         off = ELF64_HEADER_SIZE;
+
+        /* make space for program header */
+        program_header_off = off;
+        off += ELF64_PROGRAM_HEADER_SIZE;
+
         /* write shstrtab */
         shstrtab_off = off;
         e.buf[off++] = 0;
@@ -93,6 +100,7 @@ int main(int argc, char **argv) {
         /* write symtab */
         symtab_off = off;
         printf("symtab_off: %lu\n", symtab_off);
+        /* null symbol */
         symbols += 1;
         s.size = 0;
         s.value = 0;
@@ -103,9 +111,11 @@ int main(int argc, char **argv) {
         s.section_header_index = 0;
         elf_write_symbol(&s, &e, off);
         off += ELF64_SYMBOL_SIZE;
+
+        /* _start */
         symbols += 1;
         s.size = 0;
-        s.value = 0;
+        s.value = 0x401000;
         s.name_index = 1;
         s.bind = ELF_SYMBOL_BINDING_GLOBAL;
         s.type = ELF_SYMBOL_TYPE_NOTYPE;
@@ -116,47 +126,71 @@ int main(int argc, char **argv) {
         symtab_len = off - symtab_off;
 
         /* write text */
-        text_off = off;
-        elf_write_bytes(&e, &off, TEST_PROG, sizeof(TEST_PROG));
-        text_len = off - text_off;
+        /* text_off = off; */
+        text_off = 0x1000;
+        text_len = text_off;
+        elf_write_bytes(&e, &text_len, TEST_PROG, sizeof(TEST_PROG));
+        /* text_len = off - text_off; */
+        text_len -= text_off;
 
         /* write section headers */
         sh_off = off;
 
+        /* null section */
         sections += 1;
         sh.name_index = 0; sh.type = ELF_SECTION_TYPE_NULL;
         sh.flags = 0; sh.addr = 0; sh.offset = 0; sh.size = 0;
         sh.link = 0; sh.info = 0; sh.addr_alignment = 0; sh.entry_size = 0;
         elf_write_section_header(&sh, &e, off); off += ELF64_SECTION_HEADER_SIZE;
 
+        /* .shstrtab */
         sections += 1;
         sh.name_index = (u32) shstrtab_name_off; sh.type = ELF_SECTION_TYPE_STRTAB;
         sh.flags = 0; sh.addr = 0; sh.offset = shstrtab_off; sh.size = shstrtab_len;
         sh.link = 0; sh.info = 0; sh.addr_alignment = 0; sh.entry_size = 0;
         elf_write_section_header(&sh, &e, off); off += ELF64_SECTION_HEADER_SIZE;
 
+        /* .strtab */
         sections += 1;
         sh.name_index = (u32) strtab_name_off; sh.type = ELF_SECTION_TYPE_STRTAB;
         sh.flags = 0; sh.addr = 0; sh.offset = strtab_off; sh.size = strtab_len;
         sh.link = 0; sh.info = 0; sh.addr_alignment = 0; sh.entry_size = 0;
         elf_write_section_header(&sh, &e, off); off += ELF64_SECTION_HEADER_SIZE;
 
+        /* .symtab */
         sections += 1;
         sh.name_index = (u32) symtab_name_off; sh.type = ELF_SECTION_TYPE_SYMTAB;
         sh.flags = 0; sh.addr = 0; sh.offset = symtab_off; sh.size = symtab_len;
         sh.link = 2; sh.info = 1; sh.addr_alignment = 0; sh.entry_size = ELF64_SYMBOL_SIZE;
         elf_write_section_header(&sh, &e, off); off += ELF64_SECTION_HEADER_SIZE;
 
+        /* .text */
         sections += 1;
         sh.name_index = (u32) text_name_off; sh.type = ELF_SECTION_TYPE_PROGBITS;
         sh.flags = ELF_SECTION_FLAG_ALLOC | ELF_SECTION_FLAG_EXECINSTR;
-        sh.addr = 0; sh.offset = text_off; sh.size = text_len;
+        sh.addr = 0x401000; sh.offset = text_off; sh.size = text_len;
         sh.link = 0; sh.info = 0; sh.addr_alignment = 0; sh.entry_size = 0;
         elf_write_section_header(&sh, &e, off); off += ELF64_SECTION_HEADER_SIZE;
 
-        h.type = ELF_TYPE_REL;
+        /* write program header */
+        ph.type = ELF_PROGRAM_HEADER_TYPE_LOAD;
+        ph.offset = text_off;
+        ph.virtual_addr = 0x401000;
+        ph.physical_addr = 0;
+        ph.file_size = (u32) text_len;
+        ph.mem_size = (u32) text_len;
+        ph.flags = ELF_PROGRAM_HEADER_FLAG_R | ELF_PROGRAM_HEADER_FLAG_X;
+        ph.align = 0;
+        elf_write_program_header(&ph, &e, program_header_off);
+
+        /* write header at the start */
+        h.type = ELF_TYPE_EXEC;
         h.machine = ELF_MACHINE_AMD64;
         h.version = 1;
+        h.entry = 0x401000;
+        h.program_header_offset = program_header_off;
+        h.program_header_entry_size = ELF64_PROGRAM_HEADER_SIZE;
+        h.program_header_entries = 1;
         h.section_header_offset = sh_off;
         h.section_header_entry_size = ELF64_SECTION_HEADER_SIZE;
         h.section_header_entries = (u16) sections;

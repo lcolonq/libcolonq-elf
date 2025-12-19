@@ -110,7 +110,7 @@ typedef enum elf_section_flag {
     ELF_SECTION_FLAG_TLS = 0x400,
     ELF_SECTION_FLAG_COMPRESSED = 0x800
 } elf_section_flag;
-#define ELF_SECTION_FLAG_MASKOS 0x0ff00000,
+#define ELF_SECTION_FLAG_MASKOS 0x0ff00000
 #define ELF_SECTION_FLAG_MASKPROC 0xf0000000
 #define ELF32_SECTION_HEADER_SIZE 40
 #define ELF64_SECTION_HEADER_SIZE 64
@@ -189,6 +189,42 @@ typedef struct elf_rela {
 } elf_rela;
 i64 elf_read_rel(elf_rel *ret, elf_ctx *ctx, u64 off);
 i64 elf_read_rela(elf_rela *ret, elf_ctx *ctx, u64 off);
+
+typedef enum elf_program_header_type {
+    ELF_PROGRAM_HEADER_TYPE_NULL = 0,
+    ELF_PROGRAM_HEADER_TYPE_LOAD = 1,
+    ELF_PROGRAM_HEADER_TYPE_DYNAMIC = 2,
+    ELF_PROGRAM_HEADER_TYPE_INTERP = 3,
+    ELF_PROGRAM_HEADER_TYPE_NOTE = 4,
+    ELF_PROGRAM_HEADER_TYPE_SHLIB = 5,
+    ELF_PROGRAM_HEADER_TYPE_PHDR = 6,
+    ELF_PROGRAM_HEADER_TYPE_TLS = 7
+} elf_program_header_type;
+#define ELF_PROGRAM_HEADER_TYPE_LOOS 0x60000000
+#define ELF_PROGRAM_HEADER_TYPE_HIOS 0x6fffffff
+#define ELF_PROGRAM_HEADER_TYPE_LOPROC 0x70000000
+#define ELF_PROGRAM_HEADER_TYPE_HIPROC 0x7fffffff
+typedef enum elf_program_header_flag {
+    ELF_PROGRAM_HEADER_FLAG_X = 0x1,
+    ELF_PROGRAM_HEADER_FLAG_W = 0x2,
+    ELF_PROGRAM_HEADER_FLAG_R = 0x4
+} elf_program_header_flag;
+#define ELF_PROGRAM_HEADER_FLAG_MASKOS 0xff00000
+#define ELF_PROGRAM_HEADER_FLAG_MASKPROC 0xf0000000
+#define ELF32_PROGRAM_HEADER_SIZE 32
+#define ELF64_PROGRAM_HEADER_SIZE 56
+typedef struct elf_program_header {
+    u32 /* elf_program_header_type */ type;
+    u64 offset;
+    u64 virtual_addr;
+    u64 physical_addr;
+    u64 file_size;
+    u64 mem_size;
+    u32 /* elf_program_header_flag */ flags;
+    u64 align;
+} elf_program_header;
+i64 elf_read_program_header(elf_program_header *ret, elf_ctx *ctx, u64 off);
+i64 elf_write_program_header(elf_program_header *ph, elf_ctx *ctx, u64 off);
 
 /* writing bytes */
 i64 elf_write_bytes(elf_ctx *ctx, u64 *off, u8 *buf, i64 len);

@@ -246,6 +246,7 @@ i64 elf_write_header(elf_header *h, elf_ctx *ctx) {
     write_u16(ctx, &off, h->section_header_entry_size);
     write_u16(ctx, &off, h->section_header_entries);
     write_u16(ctx, &off, h->section_name_table_index);
+    return 0;
 }
 
 /* given the index of a program/section header, return its file offset */
@@ -409,6 +410,57 @@ i64 elf_read_rela(elf_rela *ret, elf_ctx *ctx, u64 off) {
     info = read_file_class_word(ctx, &off);
     parse_relocation_info(&ret->symtab_index, &ret->type, ctx, info);
     ret->addend = read_file_class_signed_word(ctx, &off);
+    return 0;
+}
+
+i64 elf_read_program_header(elf_program_header *ret, elf_ctx *ctx, u64 off) {
+    i64 sz = ctx->ident.file_class == ELF_CLASS_32
+        ? ELF32_PROGRAM_HEADER_SIZE : ELF64_PROGRAM_HEADER_SIZE;
+    if (!ret || !ctx || ctx->len < (i64) off + sz) return -1;
+    if (ctx->ident.file_class == ELF_CLASS_32) {
+        ret->type = read_u32(ctx, &off);
+        ret->offset = read_file_class_word(ctx, &off);
+        ret->virtual_addr = read_file_class_word(ctx, &off);
+        ret->physical_addr = read_file_class_word(ctx, &off);
+        ret->file_size = read_u32(ctx, &off);
+        ret->mem_size = read_u32(ctx, &off);
+        ret->flags = read_u32(ctx, &off);
+        ret->align = read_u32(ctx, &off);
+    } else {
+        ret->type = read_u32(ctx, &off);
+        ret->flags = read_u32(ctx, &off);
+        ret->offset = read_file_class_word(ctx, &off);
+        ret->virtual_addr = read_file_class_word(ctx, &off);
+        ret->physical_addr = read_file_class_word(ctx, &off);
+        ret->file_size = read_u64(ctx, &off);
+        ret->mem_size = read_u64(ctx, &off);
+        ret->align = read_u64(ctx, &off);
+    }
+    return 0;
+}
+i64 elf_write_program_header(elf_program_header *ph, elf_ctx *ctx, u64 off) {
+    i64 sz = ctx->ident.file_class == ELF_CLASS_32
+        ? ELF32_PROGRAM_HEADER_SIZE : ELF64_PROGRAM_HEADER_SIZE;
+    if (!ph || !ctx || ctx->len < (i64) off + sz) return -1;
+    if (ctx->ident.file_class == ELF_CLASS_32) {
+        write_u32(ctx, &off, ph->type);
+        write_file_class_word(ctx, &off, ph->offset);
+        write_file_class_word(ctx, &off, ph->virtual_addr);
+        write_file_class_word(ctx, &off, ph->physical_addr);
+        write_u32(ctx, &off, (u32) ph->file_size);
+        write_u32(ctx, &off, (u32) ph->mem_size);
+        write_u32(ctx, &off, ph->flags);
+        write_u32(ctx, &off, (u32) ph->align);
+    } else {
+        write_u32(ctx, &off, ph->type);
+        write_u32(ctx, &off, ph->flags);
+        write_file_class_word(ctx, &off, ph->offset);
+        write_file_class_word(ctx, &off, ph->virtual_addr);
+        write_file_class_word(ctx, &off, ph->physical_addr);
+        write_u64(ctx, &off, ph->file_size);
+        write_u64(ctx, &off, ph->mem_size);
+        write_u64(ctx, &off, ph->align);
+    }
     return 0;
 }
 
