@@ -1,6 +1,6 @@
 CC ?= gcc
 AR ?= ar
-CHK_SOURCES ?= $(SRCS)
+CHK_SOURCES ?= src/main.c $(SRCS)
 CPPFLAGS ?= -MMD -MP
 CFLAGS ?= -flto -ffat-lto-objects -march=native --std=c89 -g -Ideps/ -Isrc/ -Iinclude/ -Wall -Wextra -Wpedantic -Wconversion -Wformat-security -Wshadow -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes -Wnull-dereference -Wfloat-equal -Wundef -Wpointer-arith -Wbad-function-cast -Wlogical-op -Wmissing-braces -Wcast-align -Wstrict-overflow=5 -ftrapv
 LDFLAGS ?= -flto -g -static
@@ -9,7 +9,6 @@ BUILD = build_$(CC)
 
 SRCS := src/elf.c
 OBJECTS := $(SRCS:src/%.c=$(BUILD)/%.o)
-HEADERS := $(wildcard src/*.h)
 EXE := elf
 LIB := libcolonq-elf.a
 

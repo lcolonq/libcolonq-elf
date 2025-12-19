@@ -1,9 +1,9 @@
 #ifndef LIBCOLONQ_ELF_H
 #define LIBCOLONQ_ELF_H
 
-#include "utils.h"
-#include "platform/x86.h"
-#include "platform/amd64.h"
+#include <lcq/elf/utils.h>
+#include <lcq/elf/platform/x86.h>
+#include <lcq/elf/platform/amd64.h>
 
 /* context */
 typedef enum elf_class {

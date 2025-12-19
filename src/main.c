@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "elf.h"
+#include <lcq/elf.h>
 
 u8 TEST_PROG[] = {
     0x48, 0xc7, 0xc0, 0x3c, 0x00, 0x00, 0x00, /* mov $0x3c,%rax */

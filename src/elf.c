@@ -1,4 +1,4 @@
-#include "elf.h"
+#include <lcq/elf.h>
 
 #include <assert.h>
 #include <stdlib.h>
