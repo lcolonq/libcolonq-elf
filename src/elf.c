@@ -207,10 +207,13 @@ static void write_file_class_signed_word(elf_ctx *ctx, u64 *off, i64 x) {
     }
 }
 
+i64 elf_header_size(elf_ctx *ctx) {
+    return ctx->ident.file_class == ELF_CLASS_32
+        ? ELF32_HEADER_SIZE : ELF64_HEADER_SIZE;
+}
 i64 elf_read_header(elf_header *ret, elf_ctx *ctx) {
     u64 off = ELF_HEADER_IDENT_SIZE;
-    i64 sz = ctx->ident.file_class == ELF_CLASS_32
-        ? ELF32_HEADER_SIZE : ELF64_HEADER_SIZE;
+    i64 sz = elf_header_size(ctx);
     if (!ret || !ctx || ctx->len < sz) return -1;
     ret->type = read_u16(ctx, &off);
     ret->machine = read_u16(ctx, &off);
@@ -229,8 +232,7 @@ i64 elf_read_header(elf_header *ret, elf_ctx *ctx) {
 }
 i64 elf_write_header(elf_header *h, elf_ctx *ctx) {
     u64 off = ELF_HEADER_IDENT_SIZE;
-    i64 sz = ctx->ident.file_class == ELF_CLASS_32
-        ? ELF32_HEADER_SIZE : ELF64_HEADER_SIZE;
+    i64 sz = elf_header_size(ctx);
     if (!h || !ctx || ctx->len < sz) return -1;
     write_u16(ctx, &off, h->type);
     write_u16(ctx, &off, h->machine);
@@ -257,9 +259,12 @@ u64 elf_section_header_offset(elf_header *h, u64 idx) {
     return h->section_header_offset + idx * h->section_header_entry_size;
 }
 
-i64 elf_read_section_header(elf_section_header *ret, elf_ctx *ctx, u64 off) {
-    i64 sz = ctx->ident.file_class == ELF_CLASS_32
+i64 elf_section_header_size(elf_ctx *ctx) {
+    return ctx->ident.file_class == ELF_CLASS_32
         ? ELF32_SECTION_HEADER_SIZE : ELF64_SECTION_HEADER_SIZE;
+}
+i64 elf_read_section_header(elf_section_header *ret, elf_ctx *ctx, u64 off) {
+    i64 sz = elf_section_header_size(ctx);
     if (!ret || !ctx || ctx->len < (i64) off + sz) return -1;
     ret->name_index = read_u32(ctx, &off);
     ret->type = read_u32(ctx, &off);
@@ -274,8 +279,7 @@ i64 elf_read_section_header(elf_section_header *ret, elf_ctx *ctx, u64 off) {
     return 0;
 }
 i64 elf_write_section_header(elf_section_header *sh, elf_ctx *ctx, u64 off) {
-    i64 sz = ctx->ident.file_class == ELF_CLASS_32
-        ? ELF32_SECTION_HEADER_SIZE : ELF64_SECTION_HEADER_SIZE;
+    i64 sz = elf_section_header_size(ctx);
     if (!sh || !ctx || ctx->len < (i64) off + sz) return -1;
     printf("section off: %lu\n", off);
     write_u32(ctx, &off, sh->name_index);
@@ -301,10 +305,13 @@ char *elf_read_section_name(elf_ctx *ctx, elf_header *h, elf_section_header *sh)
     return (char *) &ctx->buf[name_section.offset + sh->name_index];
 }
 
-i64 elf_read_symbol(elf_symbol *ret, elf_ctx *ctx, u64 off) {
-    i64 sz = ctx->ident.file_class == ELF_CLASS_32
+i64 elf_symbol_size(elf_ctx *ctx) {
+    return ctx->ident.file_class == ELF_CLASS_32
         ? ELF32_SYMBOL_SIZE : ELF64_SYMBOL_SIZE;
-    u8 info, other;
+}
+i64 elf_read_symbol(elf_symbol *ret, elf_ctx *ctx, u64 off) {
+    i64 sz = elf_symbol_size(ctx);
+    u8 info = 0, other = 0;
     assert(ctx->ident.file_class == ELF_CLASS_32
         || ctx->ident.file_class == ELF_CLASS_64);
     if (!ret || !ctx || ctx->len < (i64) off + sz) return -1;
@@ -332,8 +339,7 @@ i64 elf_read_symbol(elf_symbol *ret, elf_ctx *ctx, u64 off) {
     return 0;
 }
 i64 elf_write_symbol(elf_symbol *sym, elf_ctx *ctx, u64 off) {
-    i64 sz = ctx->ident.file_class == ELF_CLASS_32
-        ? ELF32_SYMBOL_SIZE : ELF64_SYMBOL_SIZE;
+    i64 sz = elf_symbol_size(ctx);
     u8 info, other;
     assert(ctx->ident.file_class == ELF_CLASS_32
         || ctx->ident.file_class == ELF_CLASS_64);
@@ -390,9 +396,12 @@ char *elf_read_symbol_name(
     return (char *) &ctx->buf[name_section.offset + sym->name_index];
 }
 
-i64 elf_read_rel(elf_rel *ret, elf_ctx *ctx, u64 off) {
-    i64 sz = ctx->ident.file_class == ELF_CLASS_32
+i64 elf_rel_size(elf_ctx *ctx) {
+    return ctx->ident.file_class == ELF_CLASS_32
         ? ELF32_REL_SIZE : ELF64_REL_SIZE;
+}
+i64 elf_read_rel(elf_rel *ret, elf_ctx *ctx, u64 off) {
+    i64 sz = elf_rel_size(ctx);
     u64 info;
     if (!ret || !ctx || ctx->len < (i64) off + sz) return -1;
     ret->offset = read_file_class_word(ctx, &off);
@@ -401,9 +410,12 @@ i64 elf_read_rel(elf_rel *ret, elf_ctx *ctx, u64 off) {
     return 0;
 }
 
-i64 elf_read_rela(elf_rela *ret, elf_ctx *ctx, u64 off) {
-    i64 sz = ctx->ident.file_class == ELF_CLASS_32
+i64 elf_rela_size(elf_ctx *ctx) {
+    return ctx->ident.file_class == ELF_CLASS_32
         ? ELF32_RELA_SIZE : ELF64_RELA_SIZE;
+}
+i64 elf_read_rela(elf_rela *ret, elf_ctx *ctx, u64 off) {
+    i64 sz = elf_rela_size(ctx);
     u64 info;
     if (!ret || !ctx || ctx->len < (i64) off + sz) return -1;
     ret->offset = read_file_class_word(ctx, &off);
@@ -413,9 +425,12 @@ i64 elf_read_rela(elf_rela *ret, elf_ctx *ctx, u64 off) {
     return 0;
 }
 
-i64 elf_read_program_header(elf_program_header *ret, elf_ctx *ctx, u64 off) {
-    i64 sz = ctx->ident.file_class == ELF_CLASS_32
+i64 elf_program_header_size(elf_ctx *ctx) {
+    return ctx->ident.file_class == ELF_CLASS_32
         ? ELF32_PROGRAM_HEADER_SIZE : ELF64_PROGRAM_HEADER_SIZE;
+}
+i64 elf_read_program_header(elf_program_header *ret, elf_ctx *ctx, u64 off) {
+    i64 sz = elf_program_header_size(ctx);
     if (!ret || !ctx || ctx->len < (i64) off + sz) return -1;
     if (ctx->ident.file_class == ELF_CLASS_32) {
         ret->type = read_u32(ctx, &off);
@@ -439,8 +454,7 @@ i64 elf_read_program_header(elf_program_header *ret, elf_ctx *ctx, u64 off) {
     return 0;
 }
 i64 elf_write_program_header(elf_program_header *ph, elf_ctx *ctx, u64 off) {
-    i64 sz = ctx->ident.file_class == ELF_CLASS_32
-        ? ELF32_PROGRAM_HEADER_SIZE : ELF64_PROGRAM_HEADER_SIZE;
+    i64 sz = elf_program_header_size(ctx);
     if (!ph || !ctx || ctx->len < (i64) off + sz) return -1;
     if (ctx->ident.file_class == ELF_CLASS_32) {
         write_u32(ctx, &off, ph->type);

@@ -50,6 +50,7 @@ typedef enum elf_machine {
 } elf_machine;
 #define ELF32_HEADER_SIZE 52
 #define ELF64_HEADER_SIZE 64
+i64 elf_header_size(elf_ctx *ctx);
 typedef struct elf_header {
     elf_type type;
     elf_machine machine;
@@ -114,6 +115,7 @@ typedef enum elf_section_flag {
 #define ELF_SECTION_FLAG_MASKPROC 0xf0000000
 #define ELF32_SECTION_HEADER_SIZE 40
 #define ELF64_SECTION_HEADER_SIZE 64
+i64 elf_section_header_size(elf_ctx *ctx);
 typedef struct elf_section_header {
     u32 name_index;
     u32 /* elf_section_type */ type;
@@ -161,6 +163,7 @@ typedef enum elf_symbol_visibility {
 } elf_symbol_visibility;
 #define ELF32_SYMBOL_SIZE 16
 #define ELF64_SYMBOL_SIZE 24
+i64 elf_symbol_size(elf_ctx *ctx);
 typedef struct elf_symbol {
     u64 size;
     u64 value;
@@ -176,12 +179,14 @@ char *elf_read_symbol_name(elf_ctx *ctx, elf_header *h, elf_section_header *sh, 
 /* relocations */
 #define ELF32_REL_SIZE 8
 #define ELF64_REL_SIZE 16
+i64 elf_rel_size(elf_ctx *ctx);
 typedef struct elf_rel {
     u64 offset;
     u64 symtab_index, type; /* info */
 } elf_rel;
 #define ELF32_RELA_SIZE 12
 #define ELF64_RELA_SIZE 24
+i64 elf_rela_size(elf_ctx *ctx);
 typedef struct elf_rela {
     u64 offset;
     u64 symtab_index; u64 type;
@@ -213,6 +218,7 @@ typedef enum elf_program_header_flag {
 #define ELF_PROGRAM_HEADER_FLAG_MASKPROC 0xf0000000
 #define ELF32_PROGRAM_HEADER_SIZE 32
 #define ELF64_PROGRAM_HEADER_SIZE 56
+i64 elf_program_header_size(elf_ctx *ctx);
 typedef struct elf_program_header {
     u32 /* elf_program_header_type */ type;
     u64 offset;
